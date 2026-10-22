@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loyalty Card Member ATR</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234472c4'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Segoe UI' font-weight='bold'>L</text></svg>">
+<link rel="stylesheet" href="/static/app.css?v=22c">
+</head>
+<body>
+
+<aside>
+  <div class="brand">
+    <div class="mark">L</div>
+    <div><b>Loyalty ATR</b><small>Card Member Analytics</small></div>
+  </div>
+  <nav id="nav">
+    <div class="nav-h">Analysis</div>
+    <button class="nav-item active" data-sec="overview"><span class="ic">◱</span>Overview</button>
+    <button class="nav-item" data-sec="atr"><span class="ic">✎</span>ATR Actions</button>
+    <button class="nav-item" data-sec="mix"><span class="ic">≡</span>Sales Mix</button>
+    <button class="nav-item" data-sec="trend"><span class="ic">↗</span>Weekly Trend</button>
+    <div class="nav-h">Deep dives</div>
+    <button class="nav-item" data-sec="tiers"><span class="ic">◈</span>Tiers</button>
+    <button class="nav-item" data-sec="cust"><span class="ic">◉</span>Customers</button>
+    <button class="nav-item" data-sec="emp"><span class="ic">☰</span>Employee Factor</button>
+    <button class="nav-item" data-sec="margin"><span class="ic">₹</span>Margin &amp; Economics</button>
+    <button class="nav-item" data-sec="camp"><span class="ic">◎</span>Campaigns</button>
+    <div class="nav-h">Reference</div>
+    <button class="nav-item" data-sec="method"><span class="ic">§</span>Method &amp; Caveats</button>
+  </nav>
+  <div class="side-foot">Source: Snowflake · Axapta POS<br>Build <span id="gen-at">—</span></div>
+</aside>
+
+<div class="main">
+  <header class="top">
+    <button class="btn btn-ghost btn-mini menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+    <span class="h-title">Loyalty Card Member – Action Taken Report</span>
+
+    <div class="seg" id="presets">
+      <button data-p="all" class="on">All-time</button>
+      <button data-p="d30">30d</button>
+      <button data-p="d90">90d</button>
+      <button data-p="mtd">MTD</button>
+      <button data-p="fy">FY26-27</button>
+      <button data-p="custom">Custom</button>
+    </div>
+
+    <div class="dates">
+      <label>From</label><input type="date" id="frm">
+      <label>To</label><input type="date" id="to">
+    </div>
+
+    <button class="btn btn-primary" id="run-btn">▶&nbsp;Run analysis</button>
+    <button class="btn btn-ghost" id="excel-btn" disabled>⤓ Excel</button>
+
+    <span class="spacer"></span>
+
+    <span class="chip" id="period-chip" style="display:none"><span class="dot"></span><span id="period-txt"></span></span>
+    <div class="recent">
+      <button class="btn btn-ghost btn-mini" id="recent-btn">Window history ▾</button>
+      <div class="recent-pop" id="recent-pop"></div>
+    </div>
+  </header>
+
+  <div class="progress-wrap" id="prog">
+    <div class="p-meta"><span><span id="prog-step">…</span> <b id="prog-elapsed"></b></span><span id="prog-pct">0%</span></div>
+    <div class="p-bar"><span id="prog-bar"></span></div>
+  </div>
+
+  <main>
+    <!-- ============ OVERVIEW ============ -->
+    <div class="section on" id="sec-overview">
+      <div class="hero" id="hero">
+        <h1>Loyalty Card Member ATR</h1>
+        <p>Pick a date window and run the analysis — member vs non-member behaviour across division,
+           category, price grid, size and colour, with tier economics, employee leakage and ready-to-call
+           CRM target lists. Excel export in the V2 house format is one click away.</p>
+        <button class="btn" id="hero-run">▶ Run the analysis</button>
+      </div>
+
+      <div id="dash" style="display:none">
+        <div class="grid-kpi" id="kpi-row1"></div>
+        <div class="grid-kpi" id="kpi-row2"></div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-h"><h3>Member vs total sales, weekly</h3><span class="sub">₹ actual</span></div>
+            <div class="card-b"><div class="chart-box"><canvas id="ch-weekly"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>New enrolments by tier</h3><span class="sub">per week</span></div>
+            <div class="card-b"><div class="chart-box"><canvas id="ch-enrol"></canvas></div></div>
+          </div>
+        </div>
+        <div class="two-col" style="margin-top:16px">
+          <div class="card">
+            <div class="card-h"><h3>Member price-grid mix</h3>
+              <span class="legend">
+                <span><i style="background:var(--grid-e)"></i>Economy</span>
+                <span><i style="background:var(--grid-v)"></i>Value</span>
+                <span><i style="background:var(--grid-p)"></i>Premium</span>
+                <span><i style="background:var(--grid-sp)"></i>Super Prem</span>
+              </span>
+            </div>
+            <div class="card-b"><div class="chart-box sm"><canvas id="ch-grid"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Programme economics</h3><span class="sub">window totals</span></div>
+            <div class="card-b" id="econ-box"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ ATR ACTIONS ============ -->
+    <div class="section" id="sec-atr">
+      <div class="card">
+        <div class="card-h">
+          <h3>Action Taken Report</h3>
+          <span class="sub">Index = member share ÷ non-member share × 100 · Owner / Status are editable (saved locally)</span>
+        </div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="atr-table"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ SALES MIX ============ -->
+    <div class="section" id="sec-mix">
+      <div class="card">
+        <div class="card-h">
+          <h3>Sales mix — member vs non-member</h3>
+          <div class="seg" id="mix-tabs">
+            <button data-d="div" class="on">Division</button>
+            <button data-d="subdiv">Sub-division</button>
+            <button data-d="majcat">Major category</button>
+            <button data-d="grid">Price grid</button>
+            <button data-d="size">Size</button>
+            <button data-d="colour">Colour</button>
+          </div>
+          <span class="spacer"></span>
+          <input class="search" id="mix-search" placeholder="Search…">
+        </div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="mix-table"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3 id="mix-chart-title">Top rows by member sales</h3><span class="sub">bars = member sales ₹</span></div>
+        <div class="card-b"><div class="chart-box" id="mix-chart-box"><canvas id="ch-mix"></canvas></div></div>
+      </div>
+      <div class="card" id="grid-div-card" style="display:none">
+        <div class="card-h"><h3>Grid mix within division</h3><span class="sub">member % vs non-member %, with index</span></div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="grid-div-table"></div></div>
+      </div>
+      <div class="card" id="colour-div-card" style="display:none">
+        <div class="card-h"><h3>Colour mix within division</h3><span class="sub">top 8 colours per division · member sales</span></div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="colour-div-table"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ WEEKLY TREND ============ -->
+    <div class="section" id="sec-trend">
+      <div class="card">
+        <div class="card-h">
+          <h3>Weekly trend</h3>
+          <span class="sub">member sales, total sales, member share, new enrolments by tier</span>
+          <span class="spacer"></span>
+          <input class="search" id="trend-search" placeholder="Filter weeks…">
+        </div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="trend-table"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Member share of sales</h3><span class="sub">% of weekly total</span></div>
+        <div class="card-b"><div class="chart-box"><canvas id="ch-share"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TIERS ============ -->
+    <div class="section" id="sec-tiers">
+      <div class="tier-cards" id="tier-cards"></div>
+      <div class="card">
+        <div class="card-h"><h3>Tier performance</h3><span class="sub">highest card SKU held defines the tier</span></div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="tier-table"></div></div>
+      </div>
+      <div class="two-col" style="margin-top:16px">
+        <div class="card">
+          <div class="card-h"><h3>Sales &amp; GM% by tier</h3></div>
+          <div class="card-b"><div class="chart-box sm"><canvas id="ch-tier"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Grid mix by tier</h3><span class="sub">100% stacked</span></div>
+          <div class="card-b"><div class="chart-box sm"><canvas id="ch-tier-grid"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CUSTOMERS ============ -->
+    <div class="section" id="sec-cust">
+      <div class="grid-kpi" id="cust-kpis"></div>
+      <div class="card">
+        <div class="card-h">
+          <h3>Customer — BEFORE card-day / card-day / AFTER</h3>
+          <span class="sub">visit = a day with a bill · card day = first card purchase · full list in Excel &amp; CSV</span>
+          <span class="spacer"></span>
+          <input class="search" id="cust-search" placeholder="Search mobile / store / flag…">
+          <button class="btn btn-ghost btn-mini" id="cust-csv-btn">⤓ CSV</button>
+        </div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="cust-table"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ EMPLOYEES ============ -->
+    <div class="section" id="sec-emp">
+      <div class="grid-kpi" id="emp-kpis"></div>
+      <div class="card">
+        <div class="card-h">
+          <h3>Employee members</h3>
+          <span class="sub" id="emp-src"></span>
+          <span class="spacer"></span>
+          <input class="search" id="emp-search" placeholder="Search name / e-code…">
+        </div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="emp-table"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ MARGIN ============ -->
+    <div class="section" id="sec-margin">
+      <div class="card">
+        <div class="card-h"><h3>Member vs non-member GM%</h3><span class="sub">by division with Silver / Gold / Platinum split · costed lines only · red = below non-member</span></div>
+        <div class="card-b nopad"><div class="tbl-wrap" id="gm-table"></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-h"><h3>GM% comparison</h3></div>
+          <div class="card-b"><div class="chart-box sm"><canvas id="ch-gm"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Programme margin view</h3><span class="sub">window totals</span></div>
+          <div class="card-b" id="margin-note"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CAMPAIGNS ============ -->
+    <div class="section" id="sec-camp">
+      <div class="card">
+        <div class="card-h">
+          <h3>CRM campaign plan</h3>
+          <span class="sub">ranked, contactable lists · junk mobiles excluded · employees suppressed</span>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-mini" id="camp-excel-btn">⤓ All lists in Excel</button>
+        </div>
+        <div class="card-b"><div class="camp-grid" id="camp-grid"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ METHOD ============ -->
+    <div class="section" id="sec-method">
+      <div class="card">
+        <div class="card-h"><h3>Method &amp; caveats</h3></div>
+        <div class="card-b method">
+          <b>Member definition:</b> a customer mobile on any bill containing a loyalty card article
+          (…018 Silver / …003 Gold / …004 Platinum); member sales counted from first card purchase date.
+          POS bills carry no loyalty card ID (LOYALTYCARDID empty), so this is the best available proxy.<br>
+          <b>Windowing:</b> sale-line analytics (mix, GM, member behaviour) are filtered to the selected window;
+          member identity (card since, tier = highest card SKU ever held) stays lifetime; enrolment trend and card
+          revenue are windowed; campaign dormancy anchors on the window end date.<br>
+          <b>Tier:</b> Silver ₹200 / 2% slab · Gold ₹500 / 5% · Platinum ₹1,000 / 11%.<br>
+          <b>Non-member:</b> all other bills in the same window (incl. walk-ins without mobile and members' purchases before enrolment).<br>
+          <b>Sales:</b> Axapta POS lines (CRM_BRONZE.AXAPTA_SALESTRANS), sign-flipped, net of returns, card articles
+          excluded; zero-value lines (carry bags, freebies) excluded from quantity.<br>
+          <b>GM:</b> unit cost from GOLD.LOYALTY_ART_COST (store × article actuals), fallback LOYALTY_ART_COST_ANY
+          then VW_PRODUCT_MASTER.ARTICLE_COST; uncosted articles excluded from GM maths (coverage shown).
+          Costs are ex-tax landed, sales MRP-inclusive → GM% reads rich vs books. Slab-discount estimate =
+          |line disc| where |disc ÷ (price×qty) − tier rate| &lt; 0.5pp.<br>
+          <b>Employee factor:</b> active employees from HRMS tblEmployee (mobile-normalised);
+          Axapta staff-discount mechanism = ACX_EMPID / ACX_EMPDISCAMOUNT on the bill.
+          "Double-dip" = staff-discount bill whose payer mobile also holds a membership card.<br>
+          <b>Campaign lists:</b> CSVs under <code>reports/targets/</code> ranked by member-period spend;
+          30-day dormancy; upgrade thresholds ₹25k / ₹50k; suppression list = employee mobiles.
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="/static/vendor/chart.umd.js"></script>
+<script src="/static/app.js?v=22c"></script>
+</body>
+</html>

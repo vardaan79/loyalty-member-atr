@@ -1,0 +1,18 @@
+# --- customer PII / generated data: NEVER commit ---
+app/cache/            # per-window result pickles (contain customer mobiles)
+app/output/           # generated Excel workbooks (contain customer mobiles)
+reports/targets/      # campaign CSVs = customer mobile lists
+reports/*.html        # built reports (contain employee names + mobiles)
+reports/build_run.log
+app/server*.log
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- os / editor ---
+.DS_Store
+Thumbs.db
+*.swp
