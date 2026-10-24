@@ -1,15 +1,15 @@
--- ATR: Loyalty card member sales break-up
+﻿-- ATR: Loyalty card member sales break-up
 -- Division > Sub Division > Maj Cat > Grid (E/V/P/SP = RNG_SEG) > Size > Colour
 -- Member  = mobile on any bill containing a loyalty card article; counted from first card purchase date.
 -- Axapta stores sales as negative NETAMOUNT/QTY -> sign flipped. Card articles excluded from sales.
 --
--- v2 (21-Oct-2026): sections 2-5 added — tier segmentation (Silver/Gold/Platinum),
+-- v2 (21-Oct-2026): sections 2-5 added â€” tier segmentation (Silver/Gold/Platinum),
 -- employee factor (HRMS mobiles + Axapta ACX_EMPID), member GM (GOLD.LOYALTY_ART_COST),
 -- and CRM campaign target frames. The orchestrator for all of this is
 -- reports/build_loyalty_atr.py (builds the HTML + target CSVs); the statements below
 -- are the standalone SQL equivalents.
 --
--- Card tiers (validated in MEMBERSHIP CARD automation — do not change):
+-- Card tiers (validated in MEMBERSHIP CARD automation â€” do not change):
 --   000000001730000018 = Silver   Rs  200 card, 2% slab
 --   000000001730000003 = Gold     Rs  500 card, 5% slab
 --   000000001730000004 = Platinum Rs 1000 card, 11% slab
@@ -44,7 +44,7 @@ group by all
 order by division, sub_division, maj_cat, sale_v desc;
 
 -- ============================================================================
--- 2. TIER SEGMENTATION — Silver / Gold / Platinum by highest card SKU held
+-- 2. TIER SEGMENTATION â€” Silver / Gold / Platinum by highest card SKU held
 -- ============================================================================
 -- select mobile, min(d) card_since, max(rnk) tier_rank, sum(v) card_paid,
 --        count(distinct txn) card_bills
@@ -62,12 +62,12 @@ order by division, sub_division, maj_cat, sale_v desc;
 -- frequency, E/V/P/SP grid shares, GM% per tier).
 
 -- ============================================================================
--- 3. EMPLOYEE FACTOR — employees inside the member base + double-dip detection
+-- 3. EMPLOYEE FACTOR â€” employees inside the member base + double-dip detection
 -- ============================================================================
--- Employee roster: HRMS (SQL Server 192.168.151.28\hrms) tblEmployee IsActive=1,
--- mobile normalised to 10 digits — joined in the Python builder (pyodbc), fallback
+-- Employee roster: HRMS tblEmployee ( IsActive = 1 ),
+-- mobile normalised to 10 digits â€” joined in the Python builder (pyodbc), fallback
 -- snapshot: MEMBERSHIP CARD\emp_by_mobile.json.
--- Employees holding cards = members ∩ employee mobiles (joined in pandas).
+-- Employees holding cards = members âˆ© employee mobiles (joined in pandas).
 -- Axapta employee-discount bills in the ATR period (staff-discount mechanism):
 -- select to_timestamp(businessdate/1e9)::date d, transactionid, max(store) store,
 --        max(custmobileno) mobile, max(acx_empid) empid, max(acx_empdiscamount) empdisc
@@ -78,7 +78,7 @@ order by division, sub_division, maj_cat, sale_v desc;
 -- Double-dip = emp-disc bill whose payer mobile is BOTH an employee and a member.
 
 -- ============================================================================
--- 4. MEMBER GM — unit cost via GOLD loyalty cost tables (line level)
+-- 4. MEMBER GM â€” unit cost via GOLD loyalty cost tables (line level)
 -- ============================================================================
 -- Bill-level COSTAMOUNT is empty in Axapta; use store x article actuals:
 --   primary : V2RETAIL.GOLD.LOYALTY_ART_COST      (STORE, ART = 13-digit, UNIT_COST)
@@ -86,7 +86,7 @@ order by division, sub_division, maj_cat, sale_v desc;
 --   fallback: V2RETAIL.SILVER.VW_PRODUCT_MASTER.ARTICLE_COST
 -- Join key: lpad(ltrim(s.itemid,'0'),13,'0')  (bronze ITEMID = 5 zeros + 13-digit SAP article)
 -- GM line = sale_v - qty * unit_cost   (costed lines only; ex-tax cost vs
--- MRP-inclusive sale -> GM% reads rich vs books — same caveat as the margin report)
+-- MRP-inclusive sale -> GM% reads rich vs books â€” same caveat as the margin report)
 -- Sanity check vs the data-platform store-day GM table:
 -- select * from V2RETAIL.GOLD.LOYALTY_GM_STORE_DAY;  -- STORE, BUSINESS_DATE, NS_EX, COGS, NS_NOCOST
 

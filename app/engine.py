@@ -170,6 +170,7 @@ members as (
   join card c on s.itemid = c.itemid
   join V2RETAIL.CRM_BRONZE.AXAPTA_BILL_WISE_DATA b on b.transactionid = s.transactionid
   where nullif(trim(b.custmobileno),'') is not null
+    and b.PAYMENTAMOUNT > 0   -- paid bills only: excludes zero-payment aborted/storno card ring-ups (fix 24-Oct-2026)
   group by 1),
 start_dt as (select min(card_since) d from members)
 select to_timestamp(s.businessdate/1e9)::date dt,
@@ -202,7 +203,8 @@ where to_timestamp(s.businessdate/1e9)::date <= DATE '{to}'
 create or replace temporary table tmp_members as
 with card as ({CARD_SQL}),
 b as (select transactionid, max(custmobileno) mobile from V2RETAIL.CRM_BRONZE.AXAPTA_BILL_WISE_DATA
-      where nullif(trim(custmobileno),'') is not null group by 1),
+      where nullif(trim(custmobileno),'') is not null and PAYMENTAMOUNT > 0 group by 1),
+      -- PAYMENTAMOUNT > 0: paid bills only — excludes aborted/storno card ring-ups (fix 24-Oct-2026)
 cl as (
   select b.mobile, to_timestamp(s.businessdate/1e9)::date d, s.transactionid txn,
          iff(s.itemid = '000000001730000004', 3, iff(s.itemid = '000000001730000003', 2, 1)) rnk,
@@ -222,6 +224,7 @@ first_card as (
   from V2RETAIL.CRM_BRONZE.AXAPTA_SALESTRANS s join card c on s.itemid = c.itemid
   join V2RETAIL.CRM_BRONZE.AXAPTA_BILL_WISE_DATA b on b.transactionid = s.transactionid
   where nullif(trim(b.custmobileno),'') is not null
+    and b.PAYMENTAMOUNT > 0   -- paid bills only (fix 24-Oct-2026)
     and to_timestamp(s.businessdate/1e9)::date <= DATE '{to}'
   group by 1)
 select date_trunc('week', d)::date wk, count(*) new_members

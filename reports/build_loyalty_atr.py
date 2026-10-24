@@ -236,8 +236,10 @@ from tmp_atr_lines group by 1 having sum(is_member*sale_v) > 0 order by mem_v de
 print("GM queries done", flush=True)
 
 # ---------- employee factor ----------
-HRMS_CS = (r"DRIVER={ODBC Driver 18 for SQL Server};SERVER=192.168.151.28\hrms;DATABASE=HRMS;"
-           r"UID=sa_hrms;PWD=CIHTY5pBmRRwjAw;Encrypt=Optional;TrustServerCertificate=Yes")
+# HRMS credentials come from environment variables (HRMS_SERVER / HRMS_UID / HRMS_PWD)
+HRMS_CS = ("DRIVER={ODBC Driver 18 for SQL Server};SERVER=" + os.environ.get("HRMS_SERVER", "") +
+           ";DATABASE=HRMS;UID=" + os.environ.get("HRMS_UID", "") +
+           ";PWD=" + os.environ.get("HRMS_PWD", "") + ";Encrypt=Optional;TrustServerCertificate=Yes")
 
 def load_employees():
     """{mobile10: dict(ecode,name,desig,loc)} — HRMS live first, JSON snapshot fallback."""
